@@ -23,9 +23,11 @@ from fastapi_users.authentication import CookieAuthentication
 from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
+import send_ver
 
 DATABASE_URL = "sqlite:///./test.db"
 SECRET = "jgeyswfg8&^&TG&*ERW3245riw234r78tskiwhdlwwo95737T^&#%$6F@IE%&ISDGWUET*2"
+SERVER_ADRESS="http://local.weathon.top/"
 
 class User(models.BaseUser): 
     pass
@@ -79,7 +81,10 @@ def on_after_forgot_password(user: UserDB, token: str, request: Request):
 
 def after_verification_request(user: UserDB, token: str, request: Request):
     print(f"Verification requested for user {user.id}. Verification token: {token}")
-
+    # 偶偶偶 懂了 这个token是验证用的
+    # 激动  实现了  其实就是别人的API啊  现在还是这样的
+    send_ver.send(user.email, token)
+    
 
 
 app.include_router(
@@ -112,5 +117,5 @@ def test():
 
 @app.get("/records")
 def records(user: User = Depends(fastapi_users.current_user(active=True, verified=True))):
-    pass
+    return User.email
 
