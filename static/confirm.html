@@ -2,7 +2,7 @@
 <html>
 
 <head>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <title>Email Confirmation</title>
@@ -182,7 +182,8 @@
                     <tr>
                         <td align="left" bgcolor="#ffffff"
                             style="padding: 24px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 24px;">
-                            <p style="margin: 0;">Tap the button below to confirm youe action: <b>CONFIRM EMAIL
+                            <p style="margin: 0;">Tap the button below again to
+                                confirm youe action: <b>CONFIRM EMAIL
                                     ADRESS</b></p>
                         </td>
                     </tr>
@@ -196,11 +197,15 @@
                                     <td align="center" bgcolor="#ffffff" style="padding: 12px;">
                                         <table border="0" cellpadding="0" cellspacing="0">
                                             <tr>
-                                                <td align="center" bgcolor="#1a82e2" style="border-radius: 6px;">
-                                                    <form action="http://local.weathon.top/verift" method="post">
-                                                        <input type="text" name="token" value="123"><br>
-                                                        <button target="_blank" type="submit"
-                                                            style="display: inline-block; padding: 16px 36px; font-family: 'Source Sans Pro', Helvetica, Arial, sans-serif; font-size: 16px; text-decoration: none; border-radius: 6px;">CONFIRM</button>
+                                                <td align="center" style="border-radius: 6px;">
+                                                    <form>
+                                                        <!-- <input type="text" name="token" placeholder="Your Token Here"
+                                                            style="border-color:gray;border-radius: 25px;height:50px;font-size:24px;"><br> -->
+                                                        <button
+                                                            style="height:50px;width:130px;border-color:white;background-color: #1a82e2;color:white"
+                                                             type="button" id="confirm">CONFIRM</button>
+                                                            <!-- type="submit" 会先被重载 -->
+                                                            <!-- https://stackoverflow.com/questions/7577275/jquery-ajax-requests-are-getting-cancelled-without-being-sent 搜索cancel zhongyu -->
                                                     </form>
                                                 </td>
                                             </tr>
@@ -258,6 +263,27 @@
 
     </table>
     <!-- end body -->
+    <script>
+        function send_form() {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+
+            token = {
+                "token": urlParams.get('token')
+            }
+            token = JSON.stringify(token)
+            $.ajax({
+                type: "POST",
+                url: "/auth/verify",
+                data: token,
+                success: function () { alert("Success!") },
+                error: function () { alert("Error!") },
+                dataType: "json",
+                contentType: "application/json"
+            });
+        }//buuxyao wanzheng url
+        $( "#confirm" ).click(send_form)
+    </script>
 
 </body>
 

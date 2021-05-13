@@ -18,7 +18,13 @@ from mydatabase import *
 
 import messages
 
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# app = FastAPI()
 
 """
 Enjoy the fight that will give the right to be free
