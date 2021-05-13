@@ -11,7 +11,7 @@ def send(email,url):
         subject='Confirm Your Email Address',
         html_content=html_content)
     try:
-        sg = SendGridAPIClient("")
+        sg = SendGridAPIClient("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")
         response = sg.send(message)
         print(response.status_code)
         print(response.body)

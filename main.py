@@ -2,6 +2,11 @@ from fastapi import FastAPI, Depends
 import login
 import records
 import routers
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
+from mydatabase import *
+
+
 app = FastAPI()
 
 """
@@ -21,13 +26,12 @@ from fastapi import FastAPI, Request
 from fastapi_users import FastAPIUsers, models
 from fastapi_users.authentication import CookieAuthentication
 from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
+import send_ver
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
-import send_ver
 
-DATABASE_URL = "sqlite:///./test.db"
+# DATABASE_URL = "sqlite:///./test.db"
 SECRET = "jgeyswfg8&^&TG&*ERW3245riw234r78tskiwhdlwwo95737T^&#%$6F@IE%&ISDGWUET*2"
-SERVER_ADRESS="http://local.weathon.top/"
 
 class User(models.BaseUser): 
     pass
@@ -41,17 +45,11 @@ class UserUpdate(User, models.BaseUserUpdate):
 class UserDB(User, models.BaseUserDB):
     pass
 
-Base: DeclarativeMeta = declarative_base()
-database = databases.Database(DATABASE_URL)
+
+# database = databases.Database(DATABASE_URL)
 
 class UserTable(Base, SQLAlchemyBaseUserTable):
     pass
-
-engine = sqlalchemy.create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)
-Base.metadata.create_all(engine)
-
 
 users = UserTable.__table__
 user_db = SQLAlchemyUserDatabase(UserDB, database, users)
@@ -61,7 +59,7 @@ auth_backends = []
 cookie_authentication = CookieAuthentication(secret=SECRET, lifetime_seconds=3600)
 
 auth_backends.append(cookie_authentication)
-
+Base.metadata.create_all(bind=engine)
 fastapi_users = FastAPIUsers(
     user_db,
     auth_backends,
@@ -83,7 +81,7 @@ def after_verification_request(user: UserDB, token: str, request: Request):
     print(f"Verification requested for user {user.id}. Verification token: {token}")
     # 偶偶偶 懂了 这个token是验证用的
     # 激动  实现了  其实就是别人的API啊  现在还是这样的
-    send_ver.send(user.email, token)
+    # send_ver.send(user.email, token)
     
 
 
@@ -109,6 +107,21 @@ app.include_router(
 )
 app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
 
 
 @app.get("/test")
@@ -116,6 +129,16 @@ def test():
     return {"message": "I am still alive. (From GET)"}
 
 @app.get("/records")
-def records(user: User = Depends(fastapi_users.current_user(active=True, verified=True))):
-    return User.email
+def get_records(crop: str, user: User = Depends(fastapi_users.current_user(active=True, verified=True))):
+    #数据库没保存
+    print(user.email)
+    print(crop)
 
+    
+@app.post('/same')
+def same(request: records.Record, db: Session = Depends(get_db)):#不用call getdb
+    new_record = records.RecordBase(email="test")
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+    return new_record
