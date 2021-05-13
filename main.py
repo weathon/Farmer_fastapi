@@ -146,10 +146,10 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
     print(crop)
 
 
-@app.post('/same')
+@app.post('/creat_Record')
 def same(request: records.Record,
          db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
+         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
 
     # new_record = records.RecordBase(request)
     new_record = records.RecordBase(
