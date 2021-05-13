@@ -16,6 +16,8 @@ from sqlalchemy.orm import Session
 from mydatabase import *
 
 
+import messages
+
 app = FastAPI()
 
 """
@@ -146,7 +148,7 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
     print(crop)
 
 
-@app.post('/creat_Record')
+@app.post('/creatRecord')
 def same(request: records.Record,
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
@@ -161,10 +163,26 @@ def same(request: records.Record,
         contractAmount=request.contractAmount,
         deliverieAmount=request.deliverieAmount,
         unitPrice=request.unitPrice,
-        totalValue=request.totalValue,
+        totalValue=request.unitPrice*request.contractAmount,
         status=0
     )
     db.add(new_record)
     db.commit()
     db.refresh(new_record)
     return new_record
+
+
+@app.get('/getRecords')
+def same(crop: str,
+         db: Session = Depends(get_db),
+         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
+
+    returnRecords = db.query(records.RecordBase).filter(records.RecordBase.crop==crop).all()
+    return returnRecords
+
+@app.get('/getMessages')
+def same(archived: bool,
+         db: Session = Depends(get_db),
+         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
+
+    return db.query(messages.MessageBase).filter(messages.MessageBase.reciver==user.email).all()

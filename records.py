@@ -11,7 +11,7 @@ class Record(BaseModel):
     contractAmount: str
     deliverieAmount: str
     unitPrice: float
-    totalValue: float
+    # totalValue: float
     # status: int
     class Config():
         orm_mode = True
