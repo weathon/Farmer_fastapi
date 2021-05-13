@@ -1,3 +1,12 @@
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+import send_ver
+from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
+from fastapi_users.authentication import CookieAuthentication
+from fastapi_users import FastAPIUsers, models
+from fastapi import FastAPI, Request
+import sqlalchemy
+import databases
 from fastapi import FastAPI, Depends
 import login
 import records
@@ -20,27 +29,22 @@ Echo the beatong of the drum
 """
 # 本地修改的库 还是被引用到python的了
 
-import databases
-import sqlalchemy
-from fastapi import FastAPI, Request
-from fastapi_users import FastAPIUsers, models
-from fastapi_users.authentication import CookieAuthentication
-from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
-import send_ver
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
 
 # DATABASE_URL = "sqlite:///./test.db"
 SECRET = "jgeyswfg8&^&TG&*ERW3245riw234r78tskiwhdlwwo95737T^&#%$6F@IE%&ISDGWUET*2"
 
-class User(models.BaseUser): 
+
+class User(models.BaseUser):
     pass
+
 
 class UserCreate(models.BaseUserCreate):
     pin: str
 
+
 class UserUpdate(User, models.BaseUserUpdate):
     pass
+
 
 class UserDB(User, models.BaseUserDB):
     pass
@@ -51,12 +55,14 @@ class UserDB(User, models.BaseUserDB):
 class UserTable(Base, SQLAlchemyBaseUserTable):
     pass
 
+
 users = UserTable.__table__
 user_db = SQLAlchemyUserDatabase(UserDB, database, users)
 
 auth_backends = []
 
-cookie_authentication = CookieAuthentication(secret=SECRET, lifetime_seconds=3600)
+cookie_authentication = CookieAuthentication(
+    secret=SECRET, lifetime_seconds=3600)
 
 auth_backends.append(cookie_authentication)
 Base.metadata.create_all(bind=engine)
@@ -69,6 +75,7 @@ fastapi_users = FastAPIUsers(
     UserDB,
 )
 
+
 def on_after_register(user: UserDB, request: Request):
     print(f"User {user.id} has registered.")
 
@@ -78,11 +85,11 @@ def on_after_forgot_password(user: UserDB, token: str, request: Request):
 
 
 def after_verification_request(user: UserDB, token: str, request: Request):
-    print(f"Verification requested for user {user.id}. Verification token: {token}")
+    print(
+        f"Verification requested for user {user.id}. Verification token: {token}")
     # 偶偶偶 懂了 这个token是验证用的
     # 激动  实现了  其实就是别人的API啊  现在还是这样的
     # send_ver.send(user.email, token)
-    
 
 
 app.include_router(
@@ -105,7 +112,9 @@ app.include_router(
     prefix="/auth",
     tags=["auth"],
 )
-app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
+app.include_router(fastapi_users.get_users_router(),
+                   prefix="/users", tags=["users"])
+
 
 def get_db():
     db = SessionLocal()
@@ -113,6 +122,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 @app.on_event("startup")
 async def startup():
@@ -128,16 +138,32 @@ async def shutdown():
 def test():
     return {"message": "I am still alive. (From GET)"}
 
+
 @app.get("/records")
 def get_records(crop: str, user: User = Depends(fastapi_users.current_user(active=True, verified=True))):
-    #数据库没保存
+    # 数据库没保存
     print(user.email)
     print(crop)
 
-    
+
 @app.post('/same')
-def same(request: records.Record, db: Session = Depends(get_db)):#不用call getdb
-    new_record = records.RecordBase(email="test")
+def same(request: records.Record,
+         db: Session = Depends(get_db),
+         user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
+
+    # new_record = records.RecordBase(request)
+    new_record = records.RecordBase(
+        email=user.email,
+        crop=request.crop,
+        contractDate=request.contractDate,
+        deliverieMonth=request.deliverieMonth,
+        buyer=request.buyer,
+        contractAmount=request.contractAmount,
+        deliverieAmount=request.deliverieAmount,
+        unitPrice=request.unitPrice,
+        totalValue=request.totalValue,
+        status=0
+    )
     db.add(new_record)
     db.commit()
     db.refresh(new_record)
