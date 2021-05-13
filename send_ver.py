@@ -18,3 +18,4 @@ def send(email,url):
         print(response.headers)
     except Exception as e:
         print(e.message)
+
