@@ -15,3 +15,5 @@ engine = sqlalchemy.create_engine(
 )
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()
+# Base: DeclarativeMeta = declarative_base()
+# 似乎是这里，不能要类型。 为什么？
