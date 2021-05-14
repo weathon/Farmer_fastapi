@@ -196,3 +196,12 @@ def same(archived: bool,
          user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
 
     return db.query(messages.MessageBase).filter(messages.MessageBase.reciver==user.email).all()
+
+
+@app.post('/setAllMessagesAsRead')
+def read(
+         db: Session = Depends(get_db),
+         user: User = Depends(fastapi_users.current_user(active=True))
+         ):
+    messages = db.query(message.MessageBase).filter(messages.MessageBase.archived==false and messages.MessageBase.reciver==user.email).update({messages.MessageBase.archived:true})
+    return "OK"
