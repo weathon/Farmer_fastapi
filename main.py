@@ -203,7 +203,10 @@ def read(
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True))
          ):
-    messages = db.query(messages.MessageBase).filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).update({messages.MessageBase.archived:True})
+    db.query(messages.MessageBase).\
+        filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).\
+        update({"read": 1})
+    db.commit()
     return "OK"
 
 @app.get("/unreadNumber")
