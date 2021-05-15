@@ -7,7 +7,7 @@ from sqlalchemy import Column, Integer, String, Float
 class Record(BaseModel):
     # email: str
     crop: str
-    contractDate: str
+    # contractDate: str
     deliverieMonth: str
     buyer: str
     contractAmount: float

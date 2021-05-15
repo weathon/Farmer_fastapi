@@ -1,6 +1,6 @@
 # FastAPI User Moded
 Moded by https://github.com/weathon/
-Forked From: https://github.com/tiangolo/fastapi
+Forked From: https://github.com/frankie567/fastapi-users
 
 Changed:
 - Added hashedPIN, PIN is used for verify user

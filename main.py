@@ -1,5 +1,6 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.sql.expression import false
 import send_ver
 from fastapi_users.db import SQLAlchemyBaseUserTable, SQLAlchemyUserDatabase
 from fastapi_users.authentication import CookieAuthentication
@@ -14,9 +15,12 @@ import routers
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Session
 from mydatabase import *
-
-
+import security
+import html
+import deliveryItems
 import messages
+import day
+from datetime import date
 
 from fastapi.staticfiles import StaticFiles
 
@@ -95,9 +99,10 @@ def on_after_forgot_password(user: UserDB, token: str, request: Request):
 def after_verification_request(user: UserDB, token: str, request: Request):
     print(
         f"Verification requested for user {user.id}. Verification token: {token}")
-    vurl="http://127.0.0.1:8000/static/confirm.html?token="+token
-    with open("ver_email.html","r") as f:
-        html_content=f.read().replace("{{url}}",vurl).replace("{{url}}",vurl)
+    vurl = "http://127.0.0.1:8000/static/confirm.html?token="+token
+    with open("ver_email.html", "r") as f:
+        html_content = f.read().replace(
+            "{{url}}", vurl).replace("{{url}}", vurl)
     print(vurl)
     # 偶偶偶 懂了 这个token是验证用的
     # 激动  实现了  其实就是别人的API啊  现在还是这样的
@@ -161,21 +166,22 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
 @app.post('/creatRecord')
 def same(request: records.Record,
          db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
+         user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
     # new_record = records.RecordBase(request)
     new_record = records.RecordBase(
-        email=user.email,
-        crop=request.crop,
-        contractDate=request.contractDate,
-        deliverieMonth=request.deliverieMonth,
-        buyer=request.buyer,
+        email=html.escape(user.email),
+        crop=html.escape(request.crop),
+        contractDate=date.today().strftime("%d-%m-%Y"),
+        deliverieMonth=html.escape(request.deliverieMonth),
+        buyer=html.escape(request.buyer),
         contractAmount=request.contractAmount,
         deliverieAmount=request.deliverieAmount,
         unitPrice=request.unitPrice,
         totalValue=(request.unitPrice)*(request.contractAmount),
         status=0
     )
+    # print(new_record)
     db.add(new_record)
     db.commit()
     db.refresh(new_record)
@@ -185,41 +191,96 @@ def same(request: records.Record,
 @app.get('/getRecords')
 def same(crop: str,
          db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
+         user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
-    returnRecords = db.query(records.RecordBase).filter(records.RecordBase.crop==crop).all()
+    returnRecords = db.query(records.RecordBase).filter(
+        records.RecordBase.crop == crop).all()
     return returnRecords
+
 
 @app.get('/getMessages')
 def same(archived: bool,
          db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True))):  # 不用call getdb
+         user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
-    return db.query(messages.MessageBase).filter(messages.MessageBase.reciver==user.email).all()
+    return db.query(messages.MessageBase).filter(messages.MessageBase.reciver == user.email).all()
 
 
 @app.post('/setAllMessagesAsRead')
 def read(
-         db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True))
-         ):
+    db: Session = Depends(get_db),
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
     db.query(messages.MessageBase).\
-        filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).\
+        filter(messages.MessageBase.read == False and messages.MessageBase.reciver == user.email).\
         update({"read": 1})
     db.commit()
     return "OK"
 
+
 @app.get("/unreadNumber")
 def readnum(
-         db: Session = Depends(get_db),
-         user: User = Depends(fastapi_users.current_user(active=True))
-         ):
+    db: Session = Depends(get_db),
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
     return db.query(messages.MessageBase).\
-     filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).count()
-     # chaojikun duilema
+        filter(messages.MessageBase.read ==
+               False and messages.MessageBase.reciver == user.email).count()
+    # chaojikun duilema
+
 
 @app.get("/ifVerifited")
 def ifver(
-         user: User = Depends(fastapi_users.current_user(active=True))
-         ):
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
     return user.is_active
+
+
+@app.post("/setArchive")
+def archive(
+    id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
+    db.query(messages.MessageBase).\
+        filter(messages.MessageBase.archived == False and messages.MessageBase.reciver == user.email and messages.MessageBase.id == id).\
+        update({"archived": 1})
+    db.commit()
+    return "OK"
+
+
+@app.get("/getOccupiedDays")
+def getOD(
+    month: str,
+    db: Session = Depends(get_db),
+):
+    return db.query(day.DayBase.day).filter(day.DayBase.month == month and day.DayBase.full == false).all()
+
+# @app.post("/newDelivery")
+
+@app.get("/getDayDetail") #需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
+def getDD(
+    month: str,
+    inday: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
+    ans=[] # 0 - empty  1 - self 2 - used
+    periods = db.query(day.DayBase).filter(day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
+    for i in periods:
+        if i==-1:#先检测有没有
+            ans.append(0)
+        else:
+            # print(i) mingmingyou a akun 
+            tmp = db.query(deliveryItems.DayBase).filter(deliveryItems.DayBase.id==i).first() #要验证后query
+            if tmp.farmerEmail == user.email:
+                ans.append(1)
+            else:
+                ans.append(2)
+    #hysm chulide?
+    return ans
