@@ -2,24 +2,27 @@ from pydantic import BaseModel
 from mydatabase import Base
 #这里的和main里面的不一样
 from sqlalchemy import Column, Integer, String, Float
+# from fastapi_utils.guid_type import GUID
+
 class Record(BaseModel):
     # email: str
     crop: str
     contractDate: str
     deliverieMonth: str
     buyer: str
-    contractAmount: str
-    deliverieAmount: str
+    contractAmount: float
+    deliverieAmount: float
     unitPrice: float
     # totalValue: float
     # status: int
-    class Config():
-        orm_mode = True
+    # class Config():
+    #     orm_mode = True
 
 
 class RecordBase(Base):
     __tablename__ = 'records'
-    email = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True,autoincrement=True)
+    email = Column(String)
     # crop: Column(String)
     # contractDate: Column(String)
     # deliverieMonth: Column(String)

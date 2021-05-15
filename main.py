@@ -173,7 +173,7 @@ def same(request: records.Record,
         contractAmount=request.contractAmount,
         deliverieAmount=request.deliverieAmount,
         unitPrice=request.unitPrice,
-        totalValue=request.unitPrice*request.contractAmount,
+        totalValue=(request.unitPrice)*(request.contractAmount),
         status=0
     )
     db.add(new_record)
@@ -203,5 +203,20 @@ def read(
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True))
          ):
-    messages = db.query(message.MessageBase).filter(messages.MessageBase.archived==false and messages.MessageBase.reciver==user.email).update({messages.MessageBase.archived:true})
+    messages = db.query(messages.MessageBase).filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).update({messages.MessageBase.archived:True})
     return "OK"
+
+@app.get("/unreadNumber")
+def readnum(
+         db: Session = Depends(get_db),
+         user: User = Depends(fastapi_users.current_user(active=True))
+         ):
+    return db.query(messages.MessageBase).\
+     filter(messages.MessageBase.read==False and messages.MessageBase.reciver==user.email).count()
+     # chaojikun duilema
+
+@app.get("/ifVerifited")
+def ifver(
+         user: User = Depends(fastapi_users.current_user(active=True))
+         ):
+    return user.is_active
