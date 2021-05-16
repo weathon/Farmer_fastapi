@@ -13,7 +13,9 @@ class Day(BaseModel):
 
 class DayBase(Base):
     __tablename__ = 'days'
+    count = Column(Integer)
     id = Column(Integer, primary_key=True,autoincrement=True)
+    buyer = Column(String)
     full = Column(Boolean)
     # kun nans hou shouzhang
     # 性能差后来优化

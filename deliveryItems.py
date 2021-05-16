@@ -6,6 +6,8 @@ from sqlalchemy import Column, Integer, String, Float
 
 class Day(BaseModel):
     # farmerEmail: str
+    month: str
+    day: int
     buyer: str
     amount: int
     moisture: float

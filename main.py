@@ -1,3 +1,4 @@
+from re import split
 from pydantic.utils import to_camel
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
@@ -257,20 +258,23 @@ def archive(
 @app.get("/getOccupiedDays")
 def getOD(
     month: str,
+    buyer: str,
     db: Session = Depends(get_db),
 ):
-    return db.query(day.DayBase.day).filter(day.DayBase.month == month and day.DayBase.full == false).all()
+    return db.query(day.DayBase.day).filter(day.DayBase.buyer == buyer and day.DayBase.month == month and day.DayBase.full == false).all()
 
 @app.get("/getDayDetail") #需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
 def getDD(
     month: str,
     inday: str,
+    buyer: str,
     db: Session = Depends(get_db),
     user: User = Depends(fastapi_users.current_user(
         active=True, verified=True))
 ):
     ans=[] # 0 - empty  1 - self 2 - used
-    periods = db.query(day.DayBase).filter(day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
+    periods = db.query(day.DayBase).filter(day.DayBase.buyer == buyer \
+        and day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
     # print(periods)
     for i in periods:
         i=int(i) #diyigeyeyao zhelibujiance xiamian -1 huibaocu 
@@ -294,6 +298,16 @@ def newDelivery(
     user: User = Depends(fastapi_users.current_user(
         active=True, verified=True))
 ):
+    #忘记处理 Day表了， 而且要在前面
+    #检查是否可用 可以的话看占用了多少 然后占用数量加1（不再需要bool?）加一后检测bool,xiugai huang hysm +
+    periods=db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
+        and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
+    
+    # 先检查是否可用.
+    perlist=periods.split(",")
+    if(perlist[request.periodNumber]!=-1):
+        #占用了
+        return "Error"
     new_de = deliveryItems.DayBase(
         farmerEmail=html.escape(user.email), #注册时就需要?
         buyer=html.escape(request.buyer),
@@ -308,5 +322,15 @@ def newDelivery(
     db.add(new_de)
     db.commit()
     db.refresh(new_de)
+    #插入id并且修改bool
+    perlist[request.periodNumber]=new_de.id
+    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
+        and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
+
+    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
+        and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count>=48):
+        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
+        and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
+    
     return new_de
     # huangkuhysm 
