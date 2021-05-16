@@ -1,3 +1,4 @@
+from pydantic.utils import to_camel
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, func, select
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.expression import false
@@ -260,8 +261,6 @@ def getOD(
 ):
     return db.query(day.DayBase.day).filter(day.DayBase.month == month and day.DayBase.full == false).all()
 
-# @app.post("/newDelivery")
-
 @app.get("/getDayDetail") #需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
 def getDD(
     month: str,
@@ -272,7 +271,9 @@ def getDD(
 ):
     ans=[] # 0 - empty  1 - self 2 - used
     periods = db.query(day.DayBase).filter(day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
+    # print(periods)
     for i in periods:
+        i=int(i) #diyigeyeyao zhelibujiance xiamian -1 huibaocu 
         if i==-1:#先检测有没有
             ans.append(0)
         else:
@@ -284,3 +285,28 @@ def getDD(
                 ans.append(2)
     #hysm chulide?
     return ans
+
+# 之前的POST没有在body里 晕
+# @app.post("/newDelivery")
+def newDelivery(
+    request: deliveryItems.Day,
+    db: Session = Depends(get_db),
+    user: User = Depends(fastapi_users.current_user(
+        active=True, verified=True))
+):
+    new_de = deliveryItems.DayBase(
+        farmerEmail=html.escape(user.email), #注册时就需要?
+        buyer=html.escape(request.buyer),
+        amount=request.amount,
+        moisture = request.moisture,
+        crop=html.escape(request.crop),
+        date=html.escape(request.date),
+        periodNumber = request.periodNumber,
+        thedate=date.today().strftime("%d-%m-%Y")
+    )
+    # print(new_record)
+    db.add(new_de)
+    db.commit()
+    db.refresh(new_de)
+    return new_de
+    # huangkuhysm 

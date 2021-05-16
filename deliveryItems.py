@@ -5,12 +5,12 @@ from sqlalchemy import Column, Integer, String, Float
 
 
 class Day(BaseModel):
-    farmerEmail: str
+    # farmerEmail: str
     buyer: str
     amount: int
     moisture: float
     crop: str
-    date: str
+    # date: str
     periodNumber: int
 
 
@@ -22,5 +22,5 @@ class DayBase(Base):
     amount = Column(Integer)
     moisture = Column(Float)
     crop = Column(String)
-    date = Column(String)
+    thedate = Column(String)
     periodNumber = Column(Integer)
