@@ -274,7 +274,7 @@
             token = JSON.stringify(token)
             $.ajax({
                 type: "POST",
-                url: "/auth/verify",
+                url: "/api/auth/verify",
                 data: token,
                 success: function () { alert("Success!") },
                 error: function () { alert("Error!") },

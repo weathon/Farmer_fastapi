@@ -101,7 +101,7 @@ def on_after_forgot_password(user: UserDB, token: str, request: Request):
 def after_verification_request(user: UserDB, token: str, request: Request):
     print(
         f"Verification requested for user {user.id}. Verification token: {token}")
-    vurl = "http://127.0.0.1:8000/static/confirm.html?token="+token
+    vurl = "https://farmer.weathon.top/api/static/confirm.html?token="+token
     # with open("ver_email.html", "r") as f:
     #     html_content = f.read().replace(
     #         "{{url}}", vurl).replace("{{url}}", vurl)
