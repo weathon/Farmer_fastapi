@@ -101,13 +101,13 @@ def after_verification_request(user: UserDB, token: str, request: Request):
     print(
         f"Verification requested for user {user.id}. Verification token: {token}")
     vurl = "http://127.0.0.1:8000/static/confirm.html?token="+token
-    with open("ver_email.html", "r") as f:
-        html_content = f.read().replace(
-            "{{url}}", vurl).replace("{{url}}", vurl)
+    # with open("ver_email.html", "r") as f:
+    #     html_content = f.read().replace(
+    #         "{{url}}", vurl).replace("{{url}}", vurl)
     print(vurl)
     # 偶偶偶 懂了 这个token是验证用的
     # 激动  实现了  其实就是别人的API啊  现在还是这样的
-    # send_ver.send(user.email, token)
+    send_ver.send(user.email, token)
 
 
 app.include_router(
