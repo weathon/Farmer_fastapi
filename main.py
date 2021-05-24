@@ -54,20 +54,30 @@ class User(models.BaseUser):
 
 class UserCreate(models.BaseUserCreate):
     pin: str
+    phone: str
+    farmer: str
+    farm: str
+
 
 
 class UserUpdate(User, models.BaseUserUpdate):
-    pass
-
+    pin: str
+    phone: str
+    farmer: str
+    farm: str
 
 class UserDB(User, models.BaseUserDB):
-    pass
+    phone: str
+    farmer: str
+    farm: str
 
 
 # database = databases.Database(DATABASE_URL)
 
 class UserTable(Base, SQLAlchemyBaseUserTable):
-    pass
+    phone: str
+    farmer: str
+    farm: str
 
 
 users = UserTable.__table__
