@@ -29,7 +29,28 @@ from fastapi.staticfiles import StaticFiles
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+clientDebug = True
+LAXNONE="lax"
+cookie_secure=True
 
+if clientDebug:
+    from fastapi.middleware.cors import CORSMiddleware
+    origins = [
+        # "http://localhost.tiangolo.com",
+        # "https://localhost.tiangolo.com",
+        "http://localhost",
+        "http://localhost:8100",
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    LAXNONE="None"
+    cookie_secure=false
 # app = FastAPI()
 
 """
@@ -54,31 +75,31 @@ class User(models.BaseUser):
 
 class UserCreate(models.BaseUserCreate):
     pin: str
-    phone: str
-    farmer: str
-    farm: str
-
+    # phone: str
+    # farmername: str
+    # farmname: str
 
 
 class UserUpdate(User, models.BaseUserUpdate):
     pin: str
-    phone: str
-    farmer: str
-    farm: str
+    # phone: str
+    # farmer: str
+    # farm: str
+
 
 class UserDB(User, models.BaseUserDB):
-    phone: str
-    farmer: str
-    farm: str
-
+    # phone: str
+    # farmer: str
+    # farm: str
+    pass
 
 # database = databases.Database(DATABASE_URL)
 
 class UserTable(Base, SQLAlchemyBaseUserTable):
-    phone: str
-    farmer: str
-    farm: str
-
+    # phone: str
+    # farmer: str
+    # farm: str
+    pass
 
 users = UserTable.__table__
 user_db = SQLAlchemyUserDatabase(UserDB, database, users)
@@ -86,7 +107,7 @@ user_db = SQLAlchemyUserDatabase(UserDB, database, users)
 auth_backends = []
 
 cookie_authentication = CookieAuthentication(
-    secret=SECRET, lifetime_seconds=3600)
+    secret=SECRET, lifetime_seconds=3600, cookie_samesite=LAXNONE,cookie_secure=cookie_secure )
 
 auth_backends.append(cookie_authentication)
 Base.metadata.create_all(bind=engine)
@@ -173,7 +194,7 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
     # 数据库没保存
     print(user.email)
     print(crop)
-
+    return "Please use new API"
 
 @app.post('/creatRecord')
 def same(request: records.Record,
@@ -206,7 +227,7 @@ def same(crop: str,
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
     returnRecords = db.query(records.RecordBase).filter(
-        records.RecordBase.crop == crop).all()
+        records.RecordBase.crop == crop and records.RecordBase.email==user.email).all()
     return returnRecords
 
 
@@ -273,7 +294,9 @@ def getOD(
 ):
     return db.query(day.DayBase.day).filter(day.DayBase.buyer == buyer and day.DayBase.month == month and day.DayBase.full == false).all()
 
-@app.get("/getDayDetail") #需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
+
+# 需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
+@app.get("/getDayDetail")
 def getDD(
     month: str,
     inday: str,
@@ -282,65 +305,68 @@ def getDD(
     user: User = Depends(fastapi_users.current_user(
         active=True, verified=True))
 ):
-    ans=[] # 0 - empty  1 - self 2 - used
-    periods = db.query(day.DayBase).filter(day.DayBase.buyer == buyer \
-        and day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
+    ans = []  # 0 - empty  1 - self 2 - used
+    periods = db.query(day.DayBase).filter(day.DayBase.buyer == buyer
+                                           and day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
     # print(periods)
     for i in periods:
-        i=int(i) #diyigeyeyao zhelibujiance xiamian -1 huibaocu 
-        if i==-1:#先检测有没有
+        i = int(i)  # diyigeyeyao zhelibujiance xiamian -1 huibaocu
+        if i == -1:  # 先检测有没有
             ans.append(0)
         else:
-            # print(i) mingmingyou a akun 
-            tmp = db.query(deliveryItems.DayBase).filter(deliveryItems.DayBase.id==i).first() #要验证后query
+            # print(i) mingmingyou a akun
+            tmp = db.query(deliveryItems.DayBase).filter(
+                deliveryItems.DayBase.id == i).first()  # 要验证后query
             if tmp.farmerEmail == user.email:
                 ans.append(1)
             else:
                 ans.append(2)
-    #hysm chulide?
+    # hysm chulide?
     return ans
 
 # 之前的POST没有在body里 晕
 # @app.post("/newDelivery")
+
+
 def newDelivery(
     request: deliveryItems.Day,
     db: Session = Depends(get_db),
     user: User = Depends(fastapi_users.current_user(
         active=True, verified=True))
 ):
-    #忘记处理 Day表了， 而且要在前面
-    #检查是否可用 可以的话看占用了多少 然后占用数量加1（不再需要bool?）加一后检测bool,xiugai huang hysm +
-    periods=db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
-        and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
-    
+    # 忘记处理 Day表了， 而且要在前面
+    # 检查是否可用 可以的话看占用了多少 然后占用数量加1（不再需要bool?）加一后检测bool,xiugai huang hysm +
+    periods = db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
+                                           and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
+
     # 先检查是否可用.
-    perlist=periods.split(",")
-    if(perlist[request.periodNumber]!=-1):
-        #占用了
+    perlist = periods.split(",")
+    if(perlist[request.periodNumber] != -1):
+        # 占用了
         return "Error"
     new_de = deliveryItems.DayBase(
-        farmerEmail=html.escape(user.email), #注册时就需要?
+        farmerEmail=html.escape(user.email),  # 注册时就需要?
         buyer=html.escape(request.buyer),
         amount=request.amount,
-        moisture = request.moisture,
+        moisture=request.moisture,
         crop=html.escape(request.crop),
         date=html.escape(request.date),
-        periodNumber = request.periodNumber,
+        periodNumber=request.periodNumber,
         thedate=date.today().strftime("%d-%m-%Y")
     )
     # print(new_record)
     db.add(new_de)
     db.commit()
     db.refresh(new_de)
-    #插入id并且修改bool
-    perlist[request.periodNumber]=new_de.id
-    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
-        and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
+    # 插入id并且修改bool
+    perlist[request.periodNumber] = new_de.id
+    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
+                                 and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
 
-    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
-        and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count>=48):
-        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer \
-        and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
-    
+    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
+                                    and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count >= 48):
+        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
+                                     and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
+
     return new_de
-    # huangkuhysm 
+    # huangkuhysm

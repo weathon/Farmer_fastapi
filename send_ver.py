@@ -32,7 +32,9 @@ def _format_addr(s):
     return formataddr((Header(name, 'utf-8').encode(), addr))
 
 def send(email: str, token: str):
-    vurl = "https://farmer.weathon.top/static/confirm.html?token="+token
+    # vurl = "https://farmer.weathon.top/static/confirm.html?token="+token
+    vurl = "https://farmer.weathon.top/api/static/confirm.html?token="+token
+
     with open("ver_email.html", "r") as f:
         html_content = f.read().replace(
             "{{url}}", vurl).replace("{{url}}", vurl)
