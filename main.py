@@ -370,3 +370,11 @@ def newDelivery(
 
     return new_de
     # huangkuhysm
+
+
+@app.get("/getprice")
+def getPrice(
+        db: Session = Depends(get_db),
+        crop :str):
+    print db.query(
+
