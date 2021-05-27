@@ -30,8 +30,8 @@ app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 clientDebug = True
-LAXNONE="lax"
-cookie_secure=True
+LAXNONE = "lax"
+cookie_secure = True
 
 if clientDebug:
     from fastapi.middleware.cors import CORSMiddleware
@@ -49,8 +49,8 @@ if clientDebug:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    LAXNONE="None"
-    cookie_secure=false
+    LAXNONE = "None"
+    cookie_secure = false
 # app = FastAPI()
 
 """
@@ -95,11 +95,13 @@ class UserDB(User, models.BaseUserDB):
 
 # database = databases.Database(DATABASE_URL)
 
+
 class UserTable(Base, SQLAlchemyBaseUserTable):
     # phone: str
     # farmer: str
     # farm: str
     pass
+
 
 users = UserTable.__table__
 user_db = SQLAlchemyUserDatabase(UserDB, database, users)
@@ -107,7 +109,7 @@ user_db = SQLAlchemyUserDatabase(UserDB, database, users)
 auth_backends = []
 
 cookie_authentication = CookieAuthentication(
-    secret=SECRET, lifetime_seconds=3600, cookie_samesite=LAXNONE,cookie_secure=cookie_secure )
+    secret=SECRET, lifetime_seconds=3600, cookie_samesite=LAXNONE, cookie_secure=cookie_secure)
 
 auth_backends.append(cookie_authentication)
 Base.metadata.create_all(bind=engine)
@@ -196,6 +198,7 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
     print(crop)
     return "Please use new API"
 
+
 @app.post('/creatRecord')
 def same(request: records.Record,
          db: Session = Depends(get_db),
@@ -227,7 +230,7 @@ def same(crop: str,
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
     returnRecords = db.query(records.RecordBase).filter(
-        records.RecordBase.crop == crop and records.RecordBase.email==user.email).all()
+        records.RecordBase.crop == crop and records.RecordBase.email == user.email).all()
     return returnRecords
 
 
@@ -366,7 +369,9 @@ def newDelivery(
     if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
                                     and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count >= 48):
         db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
-                                     and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
+                                     and day.DaqyBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
 
     return new_de
     # huangkuhysm
+
+
