@@ -203,9 +203,10 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
 def same(request: records.Record,
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
-    gettedUnitPriceItem=db.query(price.price).filter(price.price.crop == request.crop and price.price.buyer==request.buyer
-    and price.price.month == request.deliverieMonth).first()
-    gettedUnitPrice=(gettedUnitPriceItem.rprice+gettedUnitPriceItem.aprice)/100
+    gettedUnitPriceItem = db.query(price.price).filter(price.price.crop == request.crop).filter(price.price.buyer == request.buyer
+                                                       and price.price.month == request.deliverieMonth).first()
+    gettedUnitPrice = (gettedUnitPriceItem.rprice +
+                       gettedUnitPriceItem.aprice)/100
     # new_record = records.RecordBase(request)
     new_record = records.RecordBase(
         email=html.escape(user.email),
@@ -215,7 +216,8 @@ def same(request: records.Record,
         buyer=html.escape(request.buyer),
         contractAmount=request.contractAmount,
         deliverieAmount=0,
-        unitPrice=gettedUnitPrice,#zhijie xiu gai de lou dong shu ru fa yong bu liao hysm kun huang 
+        # zhijie xiu gai de lou dong shu ru fa yong bu liao hysm kun huang
+        unitPrice=gettedUnitPrice,
         totalValue=(gettedUnitPrice)*(request.contractAmount),
         status=0
     )
@@ -297,10 +299,15 @@ def getOD(
     buyer: str,
     db: Session = Depends(get_db),
 ):
-    return db.query(day.DayBase.day).filter(day.DayBase.buyer == buyer and day.DayBase.month == month and day.DayBase.full == false).all()
+    return db.query(day.DayBase.day).filter(((day.DayBase.full == 1)) and
+                                            day.DayBase.month == month).filter(day.DayBase.buyer == buyer).all()
+    # count 和full没法query  dan ge toao p kam fam er keyi
+    # huang gege lai wen wo   jiujiu   xiaodushui
 
-
+# gege chu lai chaoji huang guo lai zhe bian hysm yiduishiqing xin lv hysm
 # 需要获取有没有自己  头痛 上面也要 kun jiejue chongfu chongtu exingkun
+
+
 @app.get("/getDayDetail")
 def getDD(
     month: str,
@@ -311,8 +318,8 @@ def getDD(
         active=True, verified=True))
 ):
     ans = []  # 0 - empty  1 - self 2 - used
-    periods = db.query(day.DayBase).filter(day.DayBase.buyer == buyer
-                                           and day.DayBase.month == month and day.DayBase.day == inday).first().periods.split(",")
+    periods = db.query(day.DayBase).filter(day.DayBase.buyer == buyer).filter(
+        day.DayBase.month == month).filter(day.DayBase.day == inday).first().periods.split(",")
     # print(periods)
     for i in periods:
         i = int(i)  # diyigeyeyao zhelibujiance xiamian -1 huibaocu
@@ -342,8 +349,8 @@ def newDelivery(
 ):
     # 忘记处理 Day表了， 而且要在前面
     # 检查是否可用 可以的话看占用了多少 然后占用数量加1（不再需要bool?）加一后检测bool,xiugai huang hysm +
-    periods = db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
-                                           and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
+    periods = db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(
+        day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
 
     # 先检查是否可用.
     perlist = periods.split(",")
@@ -366,29 +373,26 @@ def newDelivery(
     db.refresh(new_de)
     # 插入id并且修改bool
     perlist[request.periodNumber] = new_de.id
-    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
-                                 and day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
+    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
 
-    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
-                                    and day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count >= 48):
-        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer
-                                     and day.DaqyBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
+    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count >= 48):
+        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DaqyBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
 
     return new_de
     # huangkuhysm
 
 # from collections import defaultdict, recursively_default_dict
 
+
 @app.get("/price")
 def getprice(
     crop: str, db: Session = Depends(get_db),
 ):
     print(crop)
-    result={}
+    result = {}
     for i in db.query(price.price).filter(price.price.crop == crop).all():
         try:
-            result[i.buyer][i.month]=i
+            result[i.buyer][i.month] = i
         except:
-            result[i.buyer]={i.month:i}
+            result[i.buyer] = {i.month: i}
     return result
-
