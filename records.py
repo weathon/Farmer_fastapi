@@ -11,8 +11,8 @@ class Record(BaseModel):
     deliverieMonth: str
     buyer: str
     contractAmount: float
-    deliverieAmount: float
-    unitPrice: float
+    # deliverieAmount: float
+    # unitPrice: float
     # totalValue: float
     # status: int
     # class Config():

@@ -23,7 +23,7 @@ import deliveryItems
 import messages
 import day
 from datetime import date
-
+import price
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
@@ -203,7 +203,9 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
 def same(request: records.Record,
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
-
+    gettedUnitPriceItem=db.query(price.price).filter(price.price.crop == request.crop and price.price.buyer==request.buyer
+    and price.price.month == request.deliverieMonth).first()
+    gettedUnitPrice=(gettedUnitPriceItem.rprice+gettedUnitPriceItem.aprice)/100
     # new_record = records.RecordBase(request)
     new_record = records.RecordBase(
         email=html.escape(user.email),
@@ -212,9 +214,9 @@ def same(request: records.Record,
         deliverieMonth=html.escape(request.deliverieMonth),
         buyer=html.escape(request.buyer),
         contractAmount=request.contractAmount,
-        deliverieAmount=request.deliverieAmount,
-        unitPrice=request.unitPrice,
-        totalValue=(request.unitPrice)*(request.contractAmount),
+        deliverieAmount=0,
+        unitPrice=gettedUnitPrice,#zhijie xiu gai de lou dong shu ru fa yong bu liao hysm kun huang 
+        totalValue=(gettedUnitPrice)*(request.contractAmount),
         status=0
     )
     # print(new_record)
@@ -331,6 +333,7 @@ def getDD(
 # @app.post("/newDelivery")
 
 
+@app.post("/newDelivery")
 def newDelivery(
     request: deliveryItems.Day,
     db: Session = Depends(get_db),
@@ -373,4 +376,19 @@ def newDelivery(
 
     return new_de
     # huangkuhysm
+
+# from collections import defaultdict, recursively_default_dict
+
+@app.get("/price")
+def getprice(
+    crop: str, db: Session = Depends(get_db),
+):
+    print(crop)
+    result={}
+    for i in db.query(price.price).filter(price.price.crop == crop).all():
+        try:
+            result[i.buyer][i.month]=i
+        except:
+            result[i.buyer]={i.month:i}
+    return result
 

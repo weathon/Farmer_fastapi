@@ -13,3 +13,4 @@ class price(Base):
     aprice = Column(Integer)
     percentage = Column(Integer)
     closed = Column(Boolean)
+    month = Column(String)
