@@ -203,8 +203,7 @@ def get_records(crop: str, user: User = Depends(fastapi_users.current_user(activ
 def same(request: records.Record,
          db: Session = Depends(get_db),
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
-    gettedUnitPriceItem = db.query(price.price).filter(price.price.crop == request.crop).filter(price.price.buyer == request.buyer
-                                                       and price.price.month == request.deliverieMonth).first()
+    gettedUnitPriceItem = db.query(price.price).filter(price.price.crop == request.crop).filter(price.price.buyer == request.buyer).filter(price.price.month == request.deliverieMonth).first()
     gettedUnitPrice = (gettedUnitPriceItem.rprice +
                        gettedUnitPriceItem.aprice)/100
     # new_record = records.RecordBase(request)
@@ -234,7 +233,7 @@ def same(crop: str,
          user: User = Depends(fastapi_users.current_user(active=True, verified=True))):  # 不用call getdb
 
     returnRecords = db.query(records.RecordBase).filter(
-        records.RecordBase.crop == crop and records.RecordBase.email == user.email).all()
+        records.RecordBase.crop == crop).filter(records.RecordBase.email == user.email).all()
     return returnRecords
 
 
@@ -253,7 +252,7 @@ def read(
         active=True, verified=True))
 ):
     db.query(messages.MessageBase).\
-        filter(messages.MessageBase.read == False and messages.MessageBase.reciver == user.email).\
+        filter(messages.MessageBase.read == False).filter(messages.MessageBase.reciver == user.email).\
         update({"read": 1})
     db.commit()
     return "OK"
@@ -267,7 +266,7 @@ def readnum(
 ):
     return db.query(messages.MessageBase).\
         filter(messages.MessageBase.read ==
-               False and messages.MessageBase.reciver == user.email).count()
+               False).filter(messages.MessageBase.reciver == user.email).count()
     # chaojikun duilema
 
 
@@ -350,7 +349,7 @@ def newDelivery(
     # 忘记处理 Day表了， 而且要在前面
     # 检查是否可用 可以的话看占用了多少 然后占用数量加1（不再需要bool?）加一后检测bool,xiugai huang hysm +
     periods = db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(
-        day.DayBase.month == request.month and day.DayBase.day == request.inday).first().periods
+        day.DayBase.month == request.month).filter(day.DayBase.day == request.inday).first().periods
 
     # 先检查是否可用.
     perlist = periods.split(",")
@@ -373,10 +372,10 @@ def newDelivery(
     db.refresh(new_de)
     # 插入id并且修改bool
     perlist[request.periodNumber] = new_de.id
-    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month and day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
+    db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month).filter(day.DayBase.day == request.inday).update({"periods": str(perlist)[1:-1]})
 
-    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month and day.DayBase.day == request.inday).first().count >= 48):
-        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DaqyBase.month == request.month and day.DayBase.day == request.inday).update({"full": 1})
+    if(db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DayBase.month == request.month).filter(day.DayBase.day == request.inday).first().count >= 48):
+        db.query(day.DayBase).filter(day.DayBase.buyer == request.buyer).filter(day.DaqyBase.month == request.month).filter(day.DayBase.day == request.inday).update({"full": 1})
 
     return new_de
     # huangkuhysm
